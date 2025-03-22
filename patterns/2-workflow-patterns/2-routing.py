@@ -178,3 +178,55 @@ def handle_modify_event(description: str) -> CalendarResponse:
         message=f"Modified event '{details.event_identifier}' with the requested change.",
         calendar_link=f"calendar://modify?event={details.event_identifier}",
     )
+
+
+def process_calendar_request(user_input: str) -> Optional[CalendarResponse]:
+    """Main function implementing the routing workflow.
+
+    Args:
+        user_input (str): The calendar request from the user.
+
+    Returns:
+        Optional[CalendarResponse]
+    """
+    logger.info("Processing calendar request")
+
+    # Route the request
+    route_result = route_calendar_request(user_input)
+
+    # Check confidence threshold
+    if route_result.confidence_score < 0.7:
+        logger.warning(f"Low confidence score: {route_result.confidence_score}")
+        return None
+
+    # Route to appropriate handler
+    if route_result.request_type == "new_event":
+        return handle_new_event(route_result.description)
+    elif route_result.request_type == "modify_event":
+        return handle_modify_event(route_result.description)
+    else:
+        logger.warning("Request type not supported")
+        return None
+
+
+# Step 3: Test with new event
+new_event_input = (
+    "Let's schedule a team meeting next Tuesday at 2PM with Alice and Bob."
+)
+result = process_calendar_request(new_event_input)
+if result:
+    print(f"Response: {result.message}")
+
+# Step 4: Test with modify event
+modify_event_input = (
+    "Can you move the team meeting with Alice and Bob to Wednesday at 3PM instead?"
+)
+result = process_calendar_request(modify_event_input)
+if result:
+    print(f"Response: {result.message}")
+
+# Step 5: Test with invalid request
+invalid_input = "What's the weather like today?"
+result = process_calendar_request(invalid_input)
+if not result:
+    print("Request not recognized as a calendar operation.")
